@@ -8,10 +8,10 @@
 	License: GPLv2 or later
 	Text Domain: juiz-social-post-sharer
 
-	
+
 	Copyright 2012  Geoffrey Crofte  (email : support@creativejuiz.com)
 
-	    
+
 	This program is free software; you can redistribute it and/or
 	modify it under the terms of the GNU General Public License
 	as published by the Free Software Foundation; either version 2
