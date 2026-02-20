@@ -26,7 +26,7 @@ if ( ! function_exists( 'get_juiz_sps' ) ) {
 
 		// Show buttons only if post meta doesn't ask to hide it and if it's not a shortcode.
 		if ( ! $show_me ) {
-			return;
+			return '';
 		}
 
 		// URL requested by user can be custom, permalink or siteurl (or null)
@@ -376,6 +376,7 @@ if ( ! function_exists( 'get_juiz_sps' ) ) {
 
 			switch ( $k ) {
 				case 'twitter' :
+				case 'x' :
 					/**
 					 * Edits the default Twitter nickname mentionned in the URL (via option) and override the option in the admin.<br>
 					 * **The option have to not to be empty in the admin for the hook to work.**
@@ -386,9 +387,25 @@ if ( ! function_exists( 'get_juiz_sps' ) ) {
 				 	 * @param  {string}  $text      The Twitter nickname set in the admin option.
 				 	 * @return {string}  The new Twitter nickname to be mentionned.
 					 */
-					$twitter_user = isset( $juiz_sps_options['juiz_sps_twitter_user'] ) && $juiz_sps_options['juiz_sps_twitter_user'] != '' ? '&amp;related=' . apply_filters( 'juiz_sps_twitter_nickname', $juiz_sps_options['juiz_sps_twitter_user'] ) . '&amp;via=' . apply_filters( 'juiz_sps_twitter_nickname', $juiz_sps_options['juiz_sps_twitter_user'] ) : '';
+					$twitter_user = isset( $juiz_sps_options['juiz_sps_twitter_user'] ) && $juiz_sps_options['juiz_sps_twitter_user'] != '' ? '&amp;related=' . apply_filters( 'juiz_sps_x_nickname', apply_filters( 'juiz_sps_twitter_nickname', $juiz_sps_options['juiz_sps_twitter_user'] ) ) . '&amp;via=' . apply_filters( 'juiz_sps_x_nickname', apply_filters( 'juiz_sps_twitter_nickname', $juiz_sps_options['juiz_sps_twitter_user'] ) ) : '';
 
-					$api_link = 'https://twitter.com/intent/tweet?source=webclient&amp;original_referer=' . urlencode( $url ) . '&amp;text=' . $text . '&amp;url=' . urlencode( $url ) . $twitter_user;
+					$api_link = 'https://x.com/intent/tweet?source=webclient&amp;original_referer=' . urlencode( $url ) . '&amp;text=' . $text . '&amp;url=' . urlencode( $url ) . $twitter_user;
+					break;
+
+				case 'bluesky' :
+					$api_link = 'https://bsky.app/intent/compose?text=' . $text . '%20' . urlencode( $url );
+					break;
+
+				case 'mastodon' :
+					$api_link = 'https://mastodonshare.com/?text=' . $text . '&url=' . urlencode( $url ); 
+					break;
+				
+				case 'wykop' :
+					$api_link = 'http://www.wykop.pl/dodaj/link/?url=' . urlencode( $url ) . '&title=' . $text . '&desc=' . $excerpt;
+					break;
+				
+				case 'haneta' :
+					$api_link = 'http://b.hatena.ne.jp/bookmarklet?url=' . urlencode( $url ) . '&btitle=' . $text;
 					break;
 
 				case 'facebook' :
@@ -430,16 +447,24 @@ if ( ! function_exists( 'get_juiz_sps' ) ) {
 					$api_link = 'https://wa.me/?text=' . urlencode( '"' ) . $text . urlencode( '": ' . $url );
 					break;
 
-				case 'pocket':
-					$api_link = 'https://getpocket.com/edit?url=' . urlencode( $url );
+				case 'telegram':
+					$api_link = 'https://telegram.me/share/url?url=' . urlencode( '"' ) . '&text=' . $text;
 					break;
+
+				/*case 'pocket':
+					$api_link = 'https://getpocket.com/edit?url=' . urlencode( $url );
+					break;*/
 
 				case 'evernote':
 					$api_link = 'https://www.addtoany.com/add_to/evernote?linkurl=' . urlencode( $url ) . '&amp;linkname=' . $text . '&amp;linknote=' . $excerpt;
 					break;
 
 				case 'diigo':
-					$api_link = 'https://www.diigo.com/post?url=' . urlencode( $url ) . '&amp;title='. $text .'&amp;desc=' . $excerpt . '&amp;client=juis-social-post-sharer'; // client=simplelet
+					$api_link = 'https://www.diigo.com/post?url=' . urlencode( $url ) . '&amp;title='. $text .'&amp;desc=' . $excerpt . '&amp;client=nobs-share-button-wp-plugin';
+					break;
+
+				case 'flipboard':
+					$api_link = 'https://share.flipboard.com/bookmarklet/popout?url=' . urlencode( $url ) . '&title='. $text;
 					break;
 
 				case 'weibo':
@@ -450,6 +475,10 @@ if ( ! function_exists( 'get_juiz_sps' ) ) {
 
 				case 'vk':
 					$api_link = 'https://vkontakte.ru/share.php?url=' . urlencode( $url );
+					break;
+
+				case 'gmail':
+					$api_link = 'https://mail.google.com/mail/u/0/?view=cm&fs=1&su='. $text .'&body=' . urlencode( $url ) . '&ui=2&tf=1';
 					break;
 
 				case 'mail' :
@@ -478,7 +507,7 @@ if ( ! function_exists( 'get_juiz_sps' ) ) {
 					$api_text = apply_filters( 'juiz_sps_share_text_for_' . $k, __( 'Share on your favorite apps', 'juiz-social-post-sharer') );
 					$more_item_attr = 'style="display:none;"';
 					
-					$code_before_end_li = '<script>
+					$code_before_end_li = '<script id="nobs-share-buttons-share-api">
 					window.addEventListener("DOMContentLoaded", function(){
 						if ( navigator.share ) {
 							let shareurl = document.location.href;
@@ -755,7 +784,7 @@ add_filter( 'the_content', 'juiz_sps_print_links', 10, 1 );
  * 
  * @since  1.3.3.7 First version
  * @param  {boolean}  $in_excerpt=false  Set to true if you want buttons in excerpt. 
- * @return Void. 
+ * @return {void} 
  */
 if ( apply_filters( 'juiz_sps_buttons_in_excerpt', false ) ) {
 	add_filter( 'the_excerpt', 'juiz_sps_print_links', 10, 1 );
